@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard de Métricas - Gestor Inteligente de Pedidos</title>
+  <!-- Tailwind CSS CDN para renderizado inmediato en cualquier navegador -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Estilos personalizados para animaciones y adaptabilidad */
+    .bar-anim {
+      transition: width 0.5s ease-out, height 0.5s ease-out;
+    }
+    /* Estilo para barra de scroll sutil */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased p-3 sm:p-6 lg:p-8 min-h-screen">
+
+  <div class="max-w-7xl mx-auto space-y-6">
+
+    <!-- ==========================================
+         ENCABEZADO Y SELECTOR DE RANGOS
+         ========================================== -->
+    <header class="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 font-bold text-base">
+            📊
+          </span>
+          <h1 class="text-lg sm:text-xl font-bold tracking-tight text-slate-900">
+            Panel de Métricas y Rendimiento
+          </h1>
+          <span class="hidden sm:inline-block text-xs px-2.5 py-0.5 rounded-full font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+            MVP v1.0
+          </span>
+        </div>
+        <p class="text-xs sm:text-sm text-slate-500 mt-1">
+          Visualización operativa para toma de decisiones en ventas, inventario y cobros
+        </p>
+      </div>
+
+      <!-- Selector de Períodos -->
+      <div class="flex items-center gap-2 self-start md:self-auto">
+        <span class="text-xs text-slate-400 font-medium hidden sm:inline">Período:</span>
+        <div class="inline-flex p-1 bg-slate-100 rounded-xl text-xs font-medium">
+          <button id="btn-today" onclick="setPeriod('today')" class="px-3 py-1.5 rounded-lg transition-all text-slate-600 hover:text-slate-900">
+            Hoy
+          </button>
+          <button id="btn-7d" onclick="setPeriod('7d')" class="px-3 py-1.5 rounded-lg transition-all text-slate-600 hover:text-slate-900">
+            Últimos 7 días
+          </button>
+          <button id="btn-month" onclick="setPeriod('month')" class="px-3 py-1.5 rounded-lg transition-all bg-white text-slate-900 font-bold shadow-sm">
+            Este Mes
+          </button>
+        </div>
+      </div>
+    </header>
+
+
+    <!-- ==========================================
+         SECCIÓN 1: TARJETAS DE KPIS PRINCIPALES
+         ========================================== -->
+    <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+
+      <!-- KPI 1: Ventas del Período -->
+      <article class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm hover:border-emerald-300 transition-colors">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-400">
+            Ventas del Período
+          </span>
+          <span id="kpi-sales-trend" class="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100">
+            ↑ +15.4%
+          </span>
+        </div>
+        <div class="mt-3 flex items-baseline gap-2">
+          <span id="kpi-sales-val" class="text-2xl sm:text-3xl font-extrabold tracking-tight text-emerald-600">
+            $154.200
+          </span>
+          <span class="text-xs font-medium text-slate-400">ARS</span>
+        </div>
+        <div class="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+          <span>Solo pedidos entregados</span>
+          <span id="kpi-sales-count" class="font-semibold text-slate-700">42 concretados</span>
+        </div>
+      </article>
+
+      <!-- KPI 2: Unidades Vendidas & Ticket Promedio -->
+      <article class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm hover:border-blue-300 transition-colors">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-400">
+            Unidades Vendidas
+          </span>
+          <span class="inline-flex items-center text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-100">
+            Volumen Físico
+          </span>
+        </div>
+        <div class="mt-3 flex items-baseline gap-2">
+          <span id="kpi-units-val" class="text-2xl sm:text-3xl font-extrabold tracking-tight text-blue-600">
+            412
+          </span>
+          <span class="text-xs font-medium text-slate-400">unidades despachadas</span>
+        </div>
+        <div class="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+          <span>Ticket promedio:</span>
+          <strong id="kpi-ticket-val" class="font-bold text-slate-700">$374 / pedido</strong>
+        </div>
+      </article>
+
+      <!-- KPI 3: Cobros Pendientes (Acción Inmediata) -->
+      <article class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm hover:border-amber-300 transition-colors sm:col-span-2 lg:col-span-1">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-400">
+            Cobros Pendientes
+          </span>
+          <span class="inline-flex items-center text-xs font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 animate-pulse">
+            Acción Requerida
+          </span>
+        </div>
+        <div class="mt-3 flex items-baseline gap-2">
+          <span id="kpi-debt-val" class="text-2xl sm:text-3xl font-extrabold tracking-tight text-amber-600">
+            $18.500
+          </span>
+          <span class="text-xs font-medium text-slate-400">por cobrar</span>
+        </div>
+        <div class="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+          <span>Pedidos impagos:</span>
+          <a href="#pedidos-pendientes" id="kpi-debt-count" class="font-bold text-amber-600 hover:text-amber-700 underline flex items-center gap-0.5">
+            7 pedidos activos →
+          </a>
+        </div>
+      </article>
+
+    </section>
+
+
+    <!-- ==========================================
+         SECCIÓN 2: GRÁFICO DE ESTADOS + WIDGET DE STOCK
+         ========================================== -->
+    <section class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+      <!-- GRÁFICO 1: Pedidos por Estado (Barras Horizontales) -->
+      <div class="lg:col-span-7 bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-sm space-y-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-sm sm:text-base font-bold text-slate-900 tracking-tight">
+              Flujo de Pedidos por Estado
+            </h2>
+            <p class="text-xs text-slate-500">
+              Distribución en tiempo real para detección de cuellos de botella
+            </p>
+          </div>
+          <span id="badge-total-orders" class="text-xs font-mono font-semibold bg-slate-100 text-slate-700 px-2.5 py-1 rounded-lg border border-slate-200">
+            Total: 90 pedidos
+          </span>
+        </div>
+
+        <!-- Barras de Progreso Horizontales -->
+        <div class="space-y-3.5 pt-2">
+          
+          <!-- Estado 1: Recibido -->
+          <div>
+            <div class="flex justify-between text-xs mb-1">
+              <span class="font-bold text-amber-600 flex items-center gap-1.5">
+                <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                Recibido (Pendiente revisión)
+              </span>
+              <span id="txt-recibido" class="font-extrabold text-slate-800">15 pedidos (17%)</span>
+            </div>
+            <div class="w-full bg-slate-100 h-6 rounded-lg p-0.5 border border-slate-200/60 overflow-hidden">
+              <div id="bar-recibido" class="bar-anim bg-amber-500 h-full rounded-md" style="width: 35%;"></div>
+            </div>
+          </div>
+
+          <!-- Estado 2: En Preparación -->
+          <div>
+            <div class="flex justify-between text-xs mb-1">
+              <span class="font-bold text-purple-600 flex items-center gap-1.5">
+                <span class="w-2.5 h-2.5 rounded-full bg-purple-500"></span>
+                En Preparación (Stock reservado)
+              </span>
+              <span id="txt-preparacion" class="font-extrabold text-slate-800">18 pedidos (20%)</span>
+            </div>
+            <div class="w-full bg-slate-100 h-6 rounded-lg p-0.5 border border-slate-200/60 overflow-hidden">
+              <div id="bar-preparacion" class="bar-anim bg-purple-500 h-full rounded-md" style="width: 42%;"></div>
+            </div>
+          </div>
+
+          <!-- Estado 3: Listo para Entrega -->
+          <div>
+            <div class="flex justify-between text-xs mb-1">
+              <span class="font-bold text-blue-600 flex items-center gap-1.5">
+                <span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
+                Listo para Entrega / Despacho
+              </span>
+              <span id="txt-listo" class="font-extrabold text-slate-800">12 pedidos (13%)</span>
+            </div>
+            <div class="w-full bg-slate-100 h-6 rounded-lg p-0.5 border border-slate-200/60 overflow-hidden">
+              <div id="bar-listo" class="bar-anim bg-blue-500 h-full rounded-md" style="width: 28%;"></div>
+            </div>
+          </div>
+
+          <!-- Estado 4: Entregado -->
+          <div>
+            <div class="flex justify-between text-xs mb-1">
+              <span class="font-bold text-emerald-600 flex items-center gap-1.5">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                Entregado (Venta Concretada)
+              </span>
+              <span id="txt-entregado" class="font-extrabold text-slate-800">42 pedidos (47%)</span>
+            </div>
+            <div class="w-full bg-slate-100 h-6 rounded-lg p-0.5 border border-slate-200/60 overflow-hidden">
+              <div id="bar-entregado" class="bar-anim bg-emerald-500 h-full rounded-md" style="width: 95%;"></div>
+            </div>
+          </div>
+
+          <!-- Estado 5: Cancelado -->
+          <div>
+            <div class="flex justify-between text-xs mb-1">
+              <span class="font-bold text-rose-600 flex items-center gap-1.5">
+                <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+                Cancelado (Excluido de ingresos)
+              </span>
+              <span id="txt-cancelado" class="font-extrabold text-slate-800">3 pedidos (3%)</span>
+            </div>
+            <div class="w-full bg-slate-100 h-6 rounded-lg p-0.5 border border-slate-200/60 overflow-hidden">
+              <div id="bar-cancelado" class="bar-anim bg-rose-500 h-full rounded-md" style="width: 7%;"></div>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
+          <span>Fuente: <code>pedidos.created_at</code> (orden secuencial de flujo)</span>
+          <span>Click en barra filtra la lista</span>
+        </div>
+      </div>
+
+      <!-- WIDGET 2: Alertas de Bajo Stock (Semáforo Operativo) -->
+      <div class="lg:col-span-5 bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-sm flex flex-col justify-between space-y-4">
+        <div>
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="text-rose-500 text-lg">⚠️</span>
+              <h2 class="text-sm sm:text-base font-bold text-slate-900 tracking-tight">
+                Alertas de Bajo Stock
+              </h2>
+            </div>
+            <span class="text-xs px-2.5 py-0.5 rounded-full font-bold bg-rose-50 text-rose-700 border border-rose-200">
+              4 en riesgo
+            </span>
+          </div>
+          <p class="text-xs text-slate-500 mt-1">
+            Productos con stock disponible &le; al umbral mínimo
+          </p>
+
+          <!-- Lista de Items en Riesgo -->
+          <div class="mt-4 space-y-2.5">
+            
+            <!-- Item 1 -->
+            <div class="p-2.5 sm:p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between gap-3">
+              <div class="min-w-0">
+                <h4 class="text-xs font-bold text-slate-800 truncate">Remera Negra</h4>
+                <p class="text-[11px] text-slate-500">Variante: Talle M • Umbral mín: 5 uds.</p>
+              </div>
+              <div class="flex items-center gap-2 shrink-0">
+                <span class="text-xs font-extrabold text-slate-900">2 uds.</span>
+                <span class="text-[10px] px-2 py-0.5 rounded-md font-bold bg-orange-100 text-orange-800 border border-orange-200">
+                  CRÍTICO
+                </span>
+              </div>
+            </div>
+
+            <!-- Item 2 -->
+            <div class="p-2.5 sm:p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between gap-3">
+              <div class="min-w-0">
+                <h4 class="text-xs font-bold text-slate-800 truncate">Taza Cerámica</h4>
+                <p class="text-[11px] text-slate-500">Variante: Blanca Lisa • Umbral mín: 3 uds.</p>
+              </div>
+              <div class="flex items-center gap-2 shrink-0">
+                <span class="text-xs font-extrabold text-slate-900">1 ud.</span>
+                <span class="text-[10px] px-2 py-0.5 rounded-md font-bold bg-orange-100 text-orange-800 border border-orange-200">
+                  CRÍTICO
+                </span>
+              </div>
+            </div>
+
+            <!-- Item 3 -->
+            <div class="p-2.5 sm:p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between gap-3">
+              <div class="min-w-0">
+                <h4 class="text-xs font-bold text-slate-800 truncate">Gorra Deportiva</h4>
+                <p class="text-[11px] text-slate-500">Variante: Azul Marino • Umbral mín: 4 uds.</p>
+              </div>
+              <div class="flex items-center gap-2 shrink-0">
+                <span class="text-xs font-extrabold text-rose-600">0 uds.</span>
+                <span class="text-[10px] px-2 py-0.5 rounded-md font-bold bg-rose-100 text-rose-800 border border-rose-200">
+                  SIN STOCK
+                </span>
+              </div>
+            </div>
+
+            <!-- Item 4 -->
+            <div class="p-2.5 sm:p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between gap-3">
+              <div class="min-w-0">
+                <h4 class="text-xs font-bold text-slate-800 truncate">Termo Acero Inox</h4>
+                <p class="text-[11px] text-slate-500">Producto Simple • Umbral mín: 4 uds.</p>
+              </div>
+              <div class="flex items-center gap-2 shrink-0">
+                <span class="text-xs font-extrabold text-slate-900">3 uds.</span>
+                <span class="text-[10px] px-2 py-0.5 rounded-md font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                  PREVENIR
+                </span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <button onclick="alert('Redirigiendo al catálogo de inventario...')" class="w-full py-2 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-xl text-xs font-bold text-slate-700 transition-colors flex items-center justify-center gap-1.5">
+          <span>📦 Ver y ajustar inventario completo</span>
+          <span>→</span>
+        </button>
+      </div>
+
+    </section>
+
+
+    <!-- ==========================================
+         SECCIÓN 3: GRÁFICO TOP 5 PRODUCTOS MÁS VENDIDOS
+         ========================================== -->
+    <section class="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-sm space-y-4">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h2 class="text-sm sm:text-base font-bold text-slate-900 tracking-tight">
+            Top 5 Productos Más Vendidos
+          </h2>
+          <p class="text-xs text-slate-500">
+            Frecuencia de demanda en pedidos entregados para decisiones de producción y marketing
+          </p>
+        </div>
+
+        <!-- Toggle: Unidades vs Facturación -->
+        <div class="inline-flex p-1 bg-slate-100 rounded-xl text-xs font-medium self-start sm:self-auto">
+          <button id="btn-top-units" onclick="setTopMode('units')" class="px-3 py-1 rounded-lg transition-all bg-white text-slate-900 font-bold shadow-sm">
+            Por Unidades (uds)
+          </button>
+          <button id="btn-top-revenue" onclick="setTopMode('revenue')" class="px-3 py-1 rounded-lg transition-all text-slate-600 hover:text-slate-900">
+            Por Facturación ($)
+          </button>
+        </div>
+      </div>
+
+      <!-- Gráfico de Columnas Verticales -->
+      <div class="h-64 sm:h-72 pt-8 pb-2 flex items-end justify-between gap-2 sm:gap-6 border-b border-slate-100">
+        
+        <!-- Producto 1 -->
+        <div class="flex-1 flex flex-col items-center h-full justify-end group cursor-pointer">
+          <span id="top-val-0" class="text-xs font-extrabold text-blue-700 mb-1.5 bar-anim">110 uds.</span>
+          <div class="w-full max-w-[64px] bg-blue-600 rounded-t-xl bar-anim group-hover:bg-blue-500 shadow-sm" id="top-bar-0" style="height: 90%;"></div>
+          <span class="text-[11px] font-semibold text-slate-600 mt-2 text-center truncate max-w-[85px]" title="Remera Blanca L">Remera Bca L</span>
+        </div>
+
+        <!-- Producto 2 -->
+        <div class="flex-1 flex flex-col items-center h-full justify-end group cursor-pointer">
+          <span id="top-val-1" class="text-xs font-extrabold text-blue-700 mb-1.5 bar-anim">85 uds.</span>
+          <div class="w-full max-w-[64px] bg-blue-600 rounded-t-xl bar-anim group-hover:bg-blue-500 shadow-sm" id="top-bar-1" style="height: 70%;"></div>
+          <span class="text-[11px] font-semibold text-slate-600 mt-2 text-center truncate max-w-[85px]" title="Taza Cerámica">Taza Cerámica</span>
+        </div>
+
+        <!-- Producto 3 -->
+        <div class="flex-1 flex flex-col items-center h-full justify-end group cursor-pointer">
+          <span id="top-val-2" class="text-xs font-extrabold text-blue-700 mb-1.5 bar-anim">65 uds.</span>
+          <div class="w-full max-w-[64px] bg-blue-600 rounded-t-xl bar-anim group-hover:bg-blue-500 shadow-sm" id="top-bar-2" style="height: 54%;"></div>
+          <span class="text-[11px] font-semibold text-slate-600 mt-2 text-center truncate max-w-[85px]" title="Remera Negra M">Remera Neg M</span>
+        </div>
+
+        <!-- Producto 4 -->
+        <div class="flex-1 flex flex-col items-center h-full justify-end group cursor-pointer">
+          <span id="top-val-3" class="text-xs font-extrabold text-blue-700 mb-1.5 bar-anim">50 uds.</span>
+          <div class="w-full max-w-[64px] bg-blue-600 rounded-t-xl bar-anim group-hover:bg-blue-500 shadow-sm" id="top-bar-3" style="height: 41%;"></div>
+          <span class="text-[11px] font-semibold text-slate-600 mt-2 text-center truncate max-w-[85px]" title="Gorra Deportiva">Gorra Dep.</span>
+        </div>
+
+        <!-- Producto 5 -->
+        <div class="flex-1 flex flex-col items-center h-full justify-end group cursor-pointer">
+          <span id="top-val-4" class="text-xs font-extrabold text-blue-700 mb-1.5 bar-anim">35 uds.</span>
+          <div class="w-full max-w-[64px] bg-blue-600 rounded-t-xl bar-anim group-hover:bg-blue-500 shadow-sm" id="top-bar-4" style="height: 29%;"></div>
+          <span class="text-[11px] font-semibold text-slate-600 mt-2 text-center truncate max-w-[85px]" title="Cuaderno A5">Cuaderno A5</span>
+        </div>
+
+      </div>
+
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between text-xs text-slate-400 gap-2">
+        <span>💡 Cruce clave: Permite comprar insumos prioritarios sin inmovilizar capital.</span>
+        <span>Criterio: <code>items_pedido</code> en pedidos <code>ENTREGADO</code></span>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- ==========================================
+       LÓGICA JAVASCRIPT LIGERA Y REACTIVA
+       ========================================== -->
+  <script>
+    // Dataset simulado para alternar entre rangos y métricas
+    const dataset = {
+      month: {
+        sales: "$154.200", trend: "↑ +15.4%", count: "42 concretados",
+        units: "412", ticket: "$374 / pedido",
+        debt: "$18.500", debtCount: "7 pedidos activos →",
+        totalOrders: "Total: 90 pedidos",
+        funnel: [
+          { status: "recibido", txt: "15 pedidos (17%)", w: "35%" },
+          { status: "preparacion", txt: "18 pedidos (20%)", w: "42%" },
+          { status: "listo", txt: "12 pedidos (13%)", w: "28%" },
+          { status: "entregado", txt: "42 pedidos (47%)", w: "95%" },
+          { status: "cancelado", txt: "3 pedidos (3%)", w: "7%" }
+        ],
+        topUnits: [
+          { val: "110 uds.", h: "90%" },
+          { val: "85 uds.", h: "70%" },
+          { val: "65 uds.", h: "54%" },
+          { val: "50 uds.", h: "41%" },
+          { val: "35 uds.", h: "29%" }
+        ],
+        topRevenue: [
+          { val: "$55.000", h: "92%" },
+          { val: "$42.500", h: "71%" },
+          { val: "$26.000", h: "43%" },
+          { val: "$17.500", h: "29%" },
+          { val: "$13.200", h: "22%" }
+        ]
+      },
+      "7d": {
+        sales: "$38.400", trend: "↑ +8.2%", count: "11 concretados",
+        units: "98", ticket: "$392 / pedido",
+        debt: "$6.200", debtCount: "2 pedidos activos →",
+        totalOrders: "Total: 22 pedidos",
+        funnel: [
+          { status: "recibido", txt: "4 pedidos (18%)", w: "36%" },
+          { status: "preparacion", txt: "5 pedidos (23%)", w: "45%" },
+          { status: "listo", txt: "2 pedidos (9%)", w: "18%" },
+          { status: "entregado", txt: "11 pedidos (50%)", w: "90%" },
+          { status: "cancelado", txt: "0 pedidos (0%)", w: "0%" }
+        ],
+        topUnits: [
+          { val: "28 uds.", h: "85%" },
+          { val: "22 uds.", h: "66%" },
+          { val: "19 uds.", h: "57%" },
+          { val: "15 uds.", h: "45%" },
+          { val: "14 uds.", h: "42%" }
+        ],
+        topRevenue: [
+          { val: "$14.000", h: "88%" },
+          { val: "$11.000", h: "69%" },
+          { val: "$7.600", h: "48%" },
+          { val: "$5.250", h: "33%" },
+          { val: "$0.550", h: "20%" }
+        ]
+      },
+      today: {
+        sales: "$8.900", trend: "Hoy", count: "3 concretados",
+        units: "19", ticket: "$468 / pedido",
+        debt: "$2.500", debtCount: "1 pedido activo →",
+        totalOrders: "Total: 6 pedidos",
+        funnel: [
+          { status: "recibido", txt: "1 pedido (17%)", w: "33%" },
+          { status: "preparacion", txt: "2 pedidos (33%)", w: "66%" },
+          { status: "listo", txt: "0 pedidos (0%)", w: "0%" },
+          { status: "entregado", txt: "3 pedidos (50%)", w: "100%" },
+          { status: "cancelado", txt: "0 pedidos (0%)", w: "0%" }
+        ],
+        topUnits: [
+          { val: "8 uds.", h: "90%" },
+          { val: "5 uds.", h: "56%" },
+          { val: "3 uds.", h: "34%" },
+          { val: "2 uds.", h: "22%" },
+          { val: "1 ud.", h: "11%" }
+        ],
+        topRevenue: [
+          { val: "$4.000", h: "90%" },
+          { val: "$2.500", h: "56%" },
+          { val: "$1.200", h: "27%" },
+          { val: "$700", h: "16%" },
+          { val: "$500", h: "11%" }
+        ]
+      }
+    };
+
+    let activePeriod = 'month';
+    let activeTopMode = 'units';
+
+    function setPeriod(period) {
+      activePeriod = period;
+      ['today', '7d', 'month'].forEach(p => {
+        const btn = document.getElementById(`btn-${p}`);
+        if (p === period) {
+          btn.className = "px-3 py-1.5 rounded-lg transition-all bg-white text-slate-900 font-bold shadow-sm";
+        } else {
+          btn.className = "px-3 py-1.5 rounded-lg transition-all text-slate-600 hover:text-slate-900";
+        }
+      });
+      render();
+    }
+
+    function setTopMode(mode) {
+      activeTopMode = mode;
+      const btnUnits = document.getElementById('btn-top-units');
+      const btnRev = document.getElementById('btn-top-revenue');
+      if (mode === 'units') {
+        btnUnits.className = "px-3 py-1 rounded-lg transition-all bg-white text-slate-900 font-bold shadow-sm";
+        btnRev.className = "px-3 py-1 rounded-lg transition-all text-slate-600 hover:text-slate-900";
+      } else {
+        btnRev.className = "px-3 py-1 rounded-lg transition-all bg-white text-slate-900 font-bold shadow-sm";
+        btnUnits.className = "px-3 py-1 rounded-lg transition-all text-slate-600 hover:text-slate-900";
+      }
+      renderTop();
+    }
+
+    function render() {
+      const data = dataset[activePeriod];
+      document.getElementById('kpi-sales-val').textContent = data.sales;
+      document.getElementById('kpi-sales-trend').textContent = data.trend;
+      document.getElementById('kpi-sales-count').textContent = data.count;
+      document.getElementById('kpi-units-val').textContent = data.units;
+      document.getElementById('kpi-ticket-val').textContent = data.ticket;
+      document.getElementById('kpi-debt-val').textContent = data.debt;
+      document.getElementById('kpi-debt-count').textContent = data.debtCount;
+      document.getElementById('badge-total-orders').textContent = data.totalOrders;
+
+      data.funnel.forEach(item => {
+        document.getElementById(`txt-${item.status}`).textContent = item.txt;
+        document.getElementById(`bar-${item.status}`).style.width = item.w;
+      });
+
+      renderTop();
+    }
+
+    function renderTop() {
+      const data = dataset[activePeriod];
+      const items = (activeTopMode === 'units') ? data.topUnits : data.topRevenue;
+      items.forEach((item, index) => {
+        document.getElementById(`top-val-${index}`).textContent = item.val;
+        document.getElementById(`top-bar-${index}`).style.height = item.h;
+      });
+    }
+
+    // Inicialización al cargar la página
+    render();
+  </script>
+</body>
+</html>
